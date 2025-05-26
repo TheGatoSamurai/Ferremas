@@ -1,66 +1,77 @@
-Ferremas
-Este proyecto corresponde a la Evaluación Parcial 2 de la asignatura ASY5131 - Integración de Plataformas, en la cual se desarrolla la fase de construcción e integración del sistema web de "Ferremas", una tienda de ferretería.
+# 🛠️ Ferremas – Evaluación Parcial 2 ASY5131
 
-Descripción
-Se implementó una solución basada en Java utilizando una arquitectura en capas, integrando una API RESTful que permite consultar información detallada de productos (código, marca, nombre, precios, stock), diseñada para ser consumida tanto internamente por sucursales como externamente por otras tiendas.
+Este repositorio contiene el desarrollo del sistema web **Ferremas**, correspondiente a la **Evaluación Parcial 2** de la asignatura **ASY5131 – Integración de Plataformas**.
 
-El sistema también contempla:
+## 📚 Descripción del proyecto
 
-Sección de contacto para clientes.
+Ferremas es una tienda de ferretería que ya contaba con un sitio web básico. En esta etapa, se implementó una **API RESTful** para permitir:
 
-Integración de pagos mediante Webpay.
+- Consulta de productos (código, nombre, marca, precio, stock).
+- Consumo interno (sucursales) y externo (otras tiendas).
+- Integración con Webpay para pagos en línea.
+- Conversión de divisas en tiempo real vía API del Banco Central de Chile.
+- Sección de contacto para clientes.
 
-Conversión de divisas en tiempo real utilizando la API del Banco Central de Chile.
+> El proyecto utiliza una arquitectura por capas y buenas prácticas de integración de sistemas.
 
-Tecnologías utilizadas
-Java
+---
 
-Spring Boot
+## ⚙️ Tecnologías utilizadas
 
-MySQL
+- Java 17
+- Spring Boot
+- MySQL
+- API Banco Central de Chile
+- Webpay (Transbank)
+- Postman (pruebas y documentación)
 
-Postman (para pruebas y documentación)
+---
 
-API Banco Central de Chile
+## 🚀 Instrucciones para ejecución local
 
-Webpay (Transbank)
+1. **Clonar el repositorio**
+   ```bash
+   git clone https://github.com/TheGatoSamurai/Ferremas.git
+   cd Ferremas
+Configurar la base de datos
 
-🛠️ Instrucciones para ejecutar el proyecto
-Clona el repositorio
+Crear una base de datos MySQL llamada ferremas_db
 
-bash
+Ajustar las credenciales en src/main/resources/application.properties:
+
+properties
 Copiar
 Editar
-git clone https://github.com/TheGatoSamurai/Ferremas.git
-cd Ferremas
-Configura la base de datos
-
-Crea una base de datos MySQL con el nombre ferremas_db.
-
-Actualiza el archivo application.properties o application.yml con tus credenciales de conexión.
-
-Instala las dependencias y ejecuta el proyecto
-Asegúrate de tener instalado Maven y JDK 17. Luego ejecuta:
+spring.datasource.url=jdbc:mysql://localhost:3306/ferremas_db
+spring.datasource.username=tu_usuario
+spring.datasource.password=tu_contraseña
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+Compilar y ejecutar
 
 bash
 Copiar
 Editar
 mvn spring-boot:run
-Accede a la API
-El proyecto se ejecuta por defecto en http://localhost:8080.
+El proyecto estará disponible en http://localhost:8080.
 
-📡 Endpoints principales de la API
-Obtener todos los productos
+📡 Endpoints principales
+🔍 Obtener todos los productos
 http
 Copiar
 Editar
 GET /api/productos
-Consultar producto por código
+📦 Consultar producto por código
 http
 Copiar
 Editar
 GET /api/productos/{codigo}
-Ejemplo de respuesta
+💱 Conversión de divisa
+http
+Copiar
+Editar
+GET /api/cambio?moneda=USD
+📑 Ejemplo de respuesta
 json
 Copiar
 Editar
@@ -76,10 +87,6 @@ Editar
   ],
   "stock": 15
 }
-Conversión de divisa (ejemplo)
-http
-Copiar
-Editar
-GET /api/cambio?moneda=USD
-📄 Documentación de pruebas
-El archivo de colección de pruebas de Postman (ferremas.postman_collection.json) se encuentra en el repositorio y puede ser importado para facilitar las pruebas de los endpoints.
+🧪 Pruebas con Postman
+Incluye una colección de pruebas para importar en Postman:
+ferremas.postman_collection.json
