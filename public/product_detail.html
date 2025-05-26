@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalles del Producto - Ferremas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <header class="bg-blue-800 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold">Ferremas</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="index.html" class="hover:text-blue-200 transition duration-300">Productos</a></li>
+                    <li><a href="contact.html" class="hover:text-blue-200 transition duration-300">Contacto</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6 flex-grow">
+        <h2 class="text-4xl font-extrabold text-gray-800 mb-8 text-center">Detalles del Producto</h2>
+
+        <div id="product-detail" class="bg-white rounded-lg shadow-lg p-8 flex flex-col md:flex-row items-center md:items-start gap-8">
+            <div class="w-full md:w-1/3 animate-pulse">
+                <div class="h-64 bg-gray-300 rounded-lg"></div>
+            </div>
+            <div class="w-full md:w-2/3">
+                <div class="h-8 bg-gray-300 rounded w-3/4 mb-4 animate-pulse"></div>
+                <div class="h-6 bg-gray-300 rounded w-1/2 mb-2 animate-pulse"></div>
+                <div class="h-6 bg-gray-300 rounded w-2/3 mb-4 animate-pulse"></div>
+                <div class="h-4 bg-gray-300 rounded w-full mb-2 animate-pulse"></div>
+                <div class="h-4 bg-gray-300 rounded w-5/6 mb-4 animate-pulse"></div>
+                <div class="h-10 bg-gray-300 rounded w-1/3 animate-pulse"></div>
+            </div>
+        </div>
+
+        <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-8" role="alert">
+            <strong class="font-bold">¡Error!</strong>
+            <span class="block sm:inline">No se pudo cargar el detalle del producto. Por favor, verifica el ID.</span>
+        </div>
+    </main>
+
+    <footer class="bg-blue-800 text-white p-4 text-center shadow-inner mt-8">
+        <p>&copy; 2023 Ferremas. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('id');
+            const productDetailDiv = document.getElementById('product-detail');
+            const errorMessageDiv = document.getElementById('error-message');
+
+            if (!productId) {
+                errorMessageDiv.classList.remove('hidden');
+                productDetailDiv.innerHTML = '<p class="text-center text-gray-600 col-span-full">ID de producto no especificado.</p>';
+                return;
+            }
+
+            let currentProduct = null; // Variable para almacenar el producto cargado
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/products/${productId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                currentProduct = await response.json(); // Asigna el producto a la variable
+
+                productDetailDiv.innerHTML = `
+                    <div class="w-full md:w-1/3 flex justify-center items-center">
+                        <img src="${currentProduct.imagen || 'https://placehold.co/400x300/E0E0E0/333333?text=Sin+Imagen'}" alt="${currentProduct.nombre}" class="w-full h-auto max-h-96 object-contain rounded-lg shadow-md">
+                    </div>
+                    <div class="w-full md:w-2/3">
+                        <h3 class="font-extrabold text-4xl text-gray-900 mb-4">${currentProduct.nombre}</h3>
+                        <p class="text-gray-700 text-lg mb-2"><strong>Código:</strong> ${currentProduct.codigo_producto}</p>
+                        <p class="text-gray-700 text-lg mb-2"><strong>Marca:</strong> ${currentProduct.marca_nombre || 'N/A'}</p>
+                        <p class="text-gray-700 text-lg mb-2"><strong>Modelo:</strong> ${currentProduct.modelo || 'N/A'}</p>
+                        <p class="text-gray-700 text-lg mb-2"><strong>Categoría:</strong> ${currentProduct.categoria_nombre || 'N/A'}</p>
+                        <p class="text-gray-700 text-lg mb-4"><strong>Stock Disponible:</strong> <span class="${currentProduct.stock > 0 ? 'text-green-600' : 'text-red-600'} font-semibold">${currentProduct.stock}</span> unidades</p>
+
+                        <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                            <p class="text-blue-800 text-2xl font-bold">Precio Actual: $${currentProduct.precios && currentProduct.precios.length > 0 ? currentProduct.precios[0].valor.toLocaleString('es-CL') : 'N/A'}</p>
+                            ${currentProduct.promocion_nombre ? `
+                                <p class="text-green-600 text-xl font-semibold mt-2">¡Promoción: ${currentProduct.promocion_nombre}!</p>
+                                <p class="text-green-600 text-lg">Descuento del ${currentProduct.porcentaje_descuento}%</p>
+                                <p class="text-green-800 text-xl font-bold">Precio con Descuento: $${currentProduct.precio_con_descuento ? currentProduct.precio_con_descuento.toLocaleString('es-CL') : 'N/A'}</p>
+                            ` : ''}
+                        </div>
+
+                        <h4 class="font-bold text-xl text-gray-800 mb-3">Historial de Precios:</h4>
+                        <ul class="list-disc list-inside text-gray-700 mb-6">
+                            ${currentProduct.precios && currentProduct.precios.length > 0 ?
+                                currentProduct.precios.map(price => `
+                                    <li>${new Date(price.fecha).toLocaleDateString('es-CL')}: $${price.valor.toLocaleString('es-CL')}</li>
+                                `).join('')
+                                : '<li>No hay historial de precios disponible.</li>'
+                            }
+                        </ul>
+
+                        <button id="addToCartBtn" class="bg-blue-600 text-white py-3 px-6 rounded-md text-lg font-semibold hover:bg-blue-700 transition duration-300 shadow-lg mr-4">Agregar al Carrito</button>
+                        <button id="payWithWebpayBtn" class="bg-green-600 text-white py-3 px-6 rounded-md text-lg font-semibold hover:bg-green-700 transition duration-300 shadow-lg">Pagar con Webpay</button>
+                    </div>
+                `;
+
+                // Lógica para el botón de Webpay
+                document.getElementById('payWithWebpayBtn').addEventListener('click', async () => {
+                    if (!currentProduct || !currentProduct.precios || currentProduct.precios.length === 0) {
+                        alert('No se puede procesar el pago: precio del producto no disponible.');
+                        return;
+                    }
+
+                    const amount = currentProduct.precios[0].valor; // Usar el precio actual del producto
+                    const buyOrder = `ORD-${Date.now()}-${productId}`; // Orden de compra única
+                    const sessionId = `SES-${Date.now()}`; // ID de sesión único
+
+                    // URLs de retorno y final.
+                    // returnUrl: Donde Webpay envía el token de vuelta a tu backend después del pago.
+                    // finalUrl: Donde el usuario es redirigido en tu frontend después de que Webpay finaliza el proceso.
+                    const returnUrl = `http://localhost:3000/api/webpay/confirm`; // Endpoint de tu API para confirmar
+                    const finalUrl = `http://localhost:8080/payment_result.html`; // Tu página de resultado de pago en el frontend
+
+                    try {
+                        const webpayResponse = await fetch('http://localhost:3000/api/webpay/initiate', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                amount,
+                                buyOrder,
+                                sessionId,
+                                returnUrl,
+                                finalUrl
+                            })
+                        });
+
+                        const webpayData = await webpayResponse.json();
+
+                        if (webpayResponse.ok && webpayData.token && webpayData.url) {
+                            // Redirigir al usuario a la URL de Webpay
+                            const form = document.createElement('form');
+                            form.action = webpayData.url;
+                            form.method = 'POST';
+                            form.style.display = 'none'; // Ocultar el formulario
+
+                            const tokenInput = document.createElement('input');
+                            tokenInput.type = 'hidden';
+                            tokenInput.name = 'token_ws'; // Nombre del parámetro que Webpay espera
+                            tokenInput.value = webpayData.token;
+
+                            form.appendChild(tokenInput);
+                            document.body.appendChild(form);
+                            form.submit(); // Envía el formulario y redirige
+                        } else {
+                            alert('Error al iniciar el pago con Webpay: ' + (webpayData.message || 'Respuesta inválida.'));
+                        }
+                    } catch (webpayError) {
+                        console.error('Error al procesar el pago con Webpay:', webpayError);
+                        alert('Ocurrió un error al intentar iniciar el pago. Por favor, inténtalo de nuevo.');
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error al cargar los detalles del producto:', error);
+                productDetailDiv.innerHTML = ''; // Limpiar el contenido de carga
+                errorMessageDiv.classList.remove('hidden'); // Mostrar mensaje de error
+            }
+        });
+    </script>
+</body>
+</html>

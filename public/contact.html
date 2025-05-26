@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contacto - Ferremas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <header class="bg-blue-800 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold">Ferremas</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="index.html" class="hover:text-blue-200 transition duration-300">Productos</a></li>
+                    <li><a href="contact.html" class="hover:text-blue-200 transition duration-300">Contacto</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6 flex-grow">
+        <h2 class="text-4xl font-extrabold text-gray-800 mb-8 text-center">Contáctanos</h2>
+
+        <div class="max-w-xl mx-auto bg-white rounded-lg shadow-lg p-8">
+            <form id="contact-form" class="space-y-6">
+                <div>
+                    <label for="nombre" class="block text-gray-700 text-sm font-bold mb-2">Nombre Completo:</label>
+                    <input type="text" id="nombre" name="nombre" required
+                           class="shadow appearance-none border rounded-md w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Correo Electrónico:</label>
+                    <input type="email" id="email" name="email" required
+                           class="shadow appearance-none border rounded-md w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label for="telefono" class="block text-gray-700 text-sm font-bold mb-2">Teléfono (Opcional):</label>
+                    <input type="tel" id="telefono" name="telefono"
+                           class="shadow appearance-none border rounded-md w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label for="asunto" class="block text-gray-700 text-sm font-bold mb-2">Asunto:</label>
+                    <input type="text" id="asunto" name="asunto" required
+                           class="shadow appearance-none border rounded-md w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label for="mensaje" class="block text-gray-700 text-sm font-bold mb-2">Mensaje:</label>
+                    <textarea id="mensaje" name="mensaje" rows="6" required
+                              class="shadow appearance-none border rounded-md w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"></textarea>
+                </div>
+                <div id="response-message" class="hidden p-3 rounded-md text-center"></div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-md hover:bg-blue-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 shadow-md">
+                    Enviar Mensaje
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <footer class="bg-blue-800 text-white p-4 text-center shadow-inner mt-8">
+        <p>&copy; 2023 Ferremas. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const contactForm = document.getElementById('contact-form');
+            const responseMessageDiv = document.getElementById('response-message');
+
+            contactForm.addEventListener('submit', async (event) => {
+                event.preventDefault(); // Evitar el envío por defecto del formulario
+
+                const formData = new FormData(contactForm);
+                const data = Object.fromEntries(formData.entries());
+
+                try {
+                    const response = await fetch('http://localhost:3000/api/contact', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        responseMessageDiv.classList.remove('hidden', 'bg-red-100', 'text-red-700');
+                        responseMessageDiv.classList.add('bg-green-100', 'text-green-700');
+                        responseMessageDiv.textContent = result.message;
+                        contactForm.reset(); // Limpiar el formulario
+                    } else {
+                        responseMessageDiv.classList.remove('hidden', 'bg-green-100', 'text-green-700');
+                        responseMessageDiv.classList.add('bg-red-100', 'text-red-700');
+                        responseMessageDiv.textContent = result.message || 'Ocurrió un error al enviar el mensaje.';
+                    }
+                } catch (error) {
+                    console.error('Error al enviar el formulario de contacto:', error);
+                    responseMessageDiv.classList.remove('hidden', 'bg-green-100', 'text-green-700');
+                    responseMessageDiv.classList.add('bg-red-100', 'text-red-700');
+                    responseMessageDiv.textContent = 'Error de conexión con el servidor. Inténtalo de nuevo.';
+                } finally {
+                    responseMessageDiv.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ferremas - Productos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <header class="bg-blue-800 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold">Ferremas</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="index.html" class="hover:text-blue-200 transition duration-300">Productos</a></li>
+                    <li><a href="contact.html" class="hover:text-blue-200 transition duration-300">Contacto</a></li>
+                    </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-6 flex-grow">
+        <h2 class="text-4xl font-extrabold text-gray-800 mb-8 text-center">Nuestros Productos</h2>
+
+        <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden animate-pulse">
+                <div class="h-48 bg-gray-300"></div>
+                <div class="p-4">
+                    <div class="h-6 bg-gray-300 rounded w-3/4 mb-2"></div>
+                    <div class="h-4 bg-gray-300 rounded w-1/2"></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden animate-pulse">
+                <div class="h-48 bg-gray-300"></div>
+                <div class="p-4">
+                    <div class="h-6 bg-gray-300 rounded w-3/4 mb-2"></div>
+                    <div class="h-4 bg-gray-300 rounded w-1/2"></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden animate-pulse">
+                <div class="h-48 bg-gray-300"></div>
+                <div class="p-4">
+                    <div class="h-6 bg-gray-300 rounded w-3/4 mb-2"></div>
+                    <div class="h-4 bg-gray-300 rounded w-1/2"></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden animate-pulse">
+                <div class="h-48 bg-gray-300"></div>
+                <div class="p-4">
+                    <div class="h-6 bg-gray-300 rounded w-3/4 mb-2"></div>
+                    <div class="h-4 bg-gray-300 rounded w-1/2"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-8" role="alert">
+            <strong class="font-bold">¡Error!</strong>
+            <span class="block sm:inline">No se pudieron cargar los productos. Por favor, inténtalo de nuevo más tarde.</span>
+        </div>
+    </main>
+
+    <footer class="bg-blue-800 text-white p-4 text-center shadow-inner mt-8">
+        <p>&copy; 2023 Ferremas. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const productListDiv = document.getElementById('product-list');
+            const errorMessageDiv = document.getElementById('error-message');
+            const errorMessageSpan = errorMessageDiv.querySelector('span'); // Obtener el span para el mensaje dinámico
+
+            try {
+                const response = await fetch('http://localhost:3000/api/products');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const products = await response.json();
+
+                productListDiv.innerHTML = ''; // Limpiar el contenido de carga
+
+                if (products.length === 0) {
+                    productListDiv.innerHTML = '<p class="text-center text-gray-600 col-span-full">No hay productos disponibles en este momento.</p>';
+                    return;
+                }
+
+                products.forEach(product => {
+                    const productCard = document.createElement('div');
+                    productCard.className = 'bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-xl';
+                    productCard.innerHTML = `
+                        <img src="${product.imagen || 'https://placehold.co/400x300/E0E0E0/333333?text=Sin+Imagen'}" alt="${product.nombre}" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-xl text-gray-800 mb-2">${product.nombre}</h3>
+                            <p class="text-gray-600 text-sm mb-1">Marca: ${product.marca_nombre || 'N/A'}</p>
+                            <p class="text-gray-600 text-sm mb-3">Categoría: ${product.categoria_nombre || 'N/A'}</p>
+                            <p class="text-blue-600 font-bold text-lg">Precio: $${product.precio_actual ? product.precio_actual.toLocaleString('es-CL') : 'N/A'}</p>
+                            ${product.promocion_nombre ? `<p class="text-green-500 text-sm mt-1">¡En promoción! ${product.porcentaje_descuento}% Dcto.</p>` : ''}
+                            <a href="product_detail.html?id=${product.id_producto}" class="mt-4 block w-full bg-blue-600 text-white text-center py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300">Ver Detalles</a>
+                        </div>
+                    `;
+                    productListDiv.appendChild(productCard);
+                });
+            } catch (error) {
+                console.error('Error al cargar los productos:', error);
+                console.error('Mensaje de error:', error.message);
+                console.error('Pila de llamadas (stack):', error.stack);
+
+                productListDiv.innerHTML = ''; // Limpiar cualquier contenido de carga
+                errorMessageDiv.classList.remove('hidden'); // Mostrar mensaje de error
+
+                if (error instanceof TypeError) {
+                    errorMessageSpan.textContent = 'Problema de red o el servidor API no está disponible. Asegúrate de que el servidor Node.js esté funcionando en http://localhost:3000.';
+                } else if (error.message.includes('HTTP error!')) {
+                    errorMessageSpan.textContent = `Error del servidor: ${error.message}. Por favor, verifica la consola para más detalles.`;
+                } else {
+                    errorMessageSpan.textContent = 'Ocurrió un error inesperado al cargar los productos. Por favor, inténtalo de nuevo más tarde.';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
