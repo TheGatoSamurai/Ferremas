@@ -2,13 +2,15 @@
 // data/productRepository.js
 // Capa de acceso a datos para productos
 // -----------------------------------------------------
-const { sql } = require('../config/db');
+const { getPool } = require('../config/db');
 
 class ProductRepository {
-    // Obtiene todos los productos con su precio actual
     async getAllProducts() {
+        const pool = getPool();
+        let connection;
         try {
-            const result = await sql.query(`
+            connection = await pool.getConnection();
+            const [rows] = await connection.query(`
                 SELECT
                     p.id_producto,
                     p.codigo_producto,
@@ -30,17 +32,22 @@ class ProductRepository {
                 AND pp.fecha = (SELECT MAX(fecha) FROM Precios_Producto WHERE id_producto = p.id_producto)
                 ORDER BY p.nombre;
             `);
-            return result.recordset;
+            return rows;
         } catch (err) {
             console.error('Error en ProductRepository.getAllProducts:', err.message);
             throw new Error('Error al obtener productos.');
+        } finally {
+            if (connection) connection.release();
         }
     }
 
-    // Obtiene un producto por ID con su historial de precios
     async getProductById(id) {
+        const pool = getPool();
+        let connection;
         try {
-            const productResult = await sql.query`
+            connection = await pool.getConnection();
+
+            const [productRows] = await connection.query(`
                 SELECT
                     p.id_producto,
                     p.codigo_producto,
@@ -56,27 +63,29 @@ class ProductRepository {
                 LEFT JOIN Marcas m ON p.id_marca = m.id_marca
                 LEFT JOIN Categorias c ON p.id_categoria = c.id_categoria
                 LEFT JOIN Promociones prom ON p.id_promocion = prom.id_promocion
-                WHERE p.id_producto = ${id} AND p.estado = 1;
-            `;
+                WHERE p.id_producto = ? AND p.estado = 1;
+            `, [id]);
 
-            if (productResult.recordset.length === 0) {
+            if (productRows.length === 0) {
                 return null;
             }
 
-            const product = productResult.recordset[0];
+            const product = productRows[0];
 
-            const pricesResult = await sql.query`
+            const [pricesRows] = await connection.query(`
                 SELECT fecha, valor
                 FROM Precios_Producto
-                WHERE id_producto = ${id}
+                WHERE id_producto = ?
                 ORDER BY fecha DESC;
-            `;
-            product.precios = pricesResult.recordset;
+            `, [id]);
+            product.precios = pricesRows;
 
             return product;
         } catch (err) {
             console.error('Error en ProductRepository.getProductById:', err.message);
             throw new Error('Error al obtener el producto.');
+        } finally {
+            if (connection) connection.release();
         }
     }
 }

@@ -3,20 +3,14 @@
 // Capa de lógica de negocio para productos
 // -----------------------------------------------------
 const productRepository = require('../data/productRepository');
-
-// INICIO DE CAMBIOS PARA WEBPAY
-// Importa los módulos necesarios del SDK de Transbank
 const { Options, IntegrationApiKeys, Environment, IntegrationCommerceCodes, WebpayPlus } = require("transbank-sdk");
 
 // Configuración de Webpay
-// IMPORTANTE: Usa tus credenciales de producción aquí para entornos de producción.
-// Para integración, usa los códigos y claves de integración proporcionados por Transbank.
 const webpayOptions = new Options(
-    process.env.WEBPAY_COMMERCE_CODE || IntegrationCommerceCodes.WEBPAY_PLUS, // Usa variable de entorno o código de integración por defecto
-    process.env.WEBPAY_API_KEY || IntegrationApiKeys.WEBPAY,                 // Usa variable de entorno o clave de integración por defecto
-    process.env.WEBPAY_ENVIRONMENT === 'PRODUCTION' ? Environment.Production : Environment.Integration // Define el entorno
+    process.env.WEBPAY_COMMERCE_CODE || IntegrationCommerceCodes.WEBPAY_PLUS,
+    process.env.WEBPAY_API_KEY || IntegrationApiKeys.WEBPAY,
+    process.env.WEBPAY_ENVIRONMENT === 'PRODUCTION' ? Environment.Production : Environment.Integration
 );
-// FIN DE CAMBIOS PARA WEBPAY
 
 class ProductService {
     async getProducts() {
@@ -30,7 +24,6 @@ class ProductService {
         }
 
         if (product.promocion_nombre && product.porcentaje_descuento) {
-            // CORRECCIÓN: Asegura que se encuentre el precio más reciente de forma robusta
             const precioActualObj = product.precios.reduce((prev, current) =>
                 (new Date(prev.fecha) > new Date(current.fecha)) ? prev : current
             );
@@ -42,27 +35,52 @@ class ProductService {
         return product;
     }
 
-    // --- Placeholder para integración con Banco Central de Chile ---
-    async convertCurrency(amount, fromCurrency, toCurrency) {
-        // En un escenario real, aquí harías una llamada a la API del Banco Central de Chile
-        // para obtener las tasas de cambio y realizar la conversión.
-        // Ejemplo de URL (esto es un placeholder, consulta la documentación oficial del BCCH):
-        // `https://api.bcentral.cl/v1/indicadores/dolar/fecha`
-        console.log(`Simulando conversión de ${amount} ${fromCurrency} a ${toCurrency}`);
-        // Retorna un valor simulado
-        return amount * 850; // Ejemplo: 1 USD = 850 CLP
+    // --- INTEGRACIÓN CON LA API DEL BANCO CENTRAL DE CHILE (mindicador.cl) ---
+    /**
+     * Obtiene el valor actual del dólar y, opcionalmente, convierte un monto.
+     * @param {number} [amountToConvert=null] - El monto a convertir desde CLP a USD.
+     * @returns {Promise<{dolar_value: number, converted_amount: number|null}>} El valor del dólar y el monto convertido.
+     */
+    async getDolarExchangeRate(amountToConvert = null) {
+        try {
+            // URL de la API de mindicador.cl para el dólar de hoy
+            const response = await fetch('https://mindicador.cl/api/dolar');
+            if (!response.ok) {
+                throw new Error(`Error al obtener datos del dólar: ${response.statusText}`);
+            }
+            const data = await response.json();
+
+            // mindicador.cl devuelve un array en 'serie', el primer elemento es el valor actual
+            const dolarValue = data.serie && data.serie.length > 0 ? data.serie[0].valor : null;
+
+            if (!dolarValue) {
+                throw new Error('No se pudo obtener el valor del dólar desde la API.');
+            }
+
+            let convertedAmount = null;
+            if (amountToConvert !== null && typeof amountToConvert === 'number') {
+                convertedAmount = amountToConvert / dolarValue; // De CLP a USD
+            }
+
+            return {
+                dolar_value: dolarValue,
+                converted_amount: convertedAmount
+            };
+
+        } catch (error) {
+            console.error('Error en ProductService.getDolarExchangeRate:', error.message);
+            throw new Error(`Error al obtener el valor del dólar: ${error.message}`);
+        }
     }
 
-    // INICIO DE MÉTODOS DE INTEGRACIÓN CON WEBPAY
+
+    // --- Métodos de integración con WEBPAY ---
     async initiateWebpayTransaction(amount, buyOrder, sessionId, returnUrl, finalUrl) {
         console.log(`Iniciando transacción Webpay para orden ${buyOrder} con monto ${amount}`);
         try {
-            // Crea una nueva instancia de transacción WebpayPlus con las opciones configuradas
             const tx = new WebpayPlus.Transaction(webpayOptions);
-            // Llama al método create del SDK de Transbank para iniciar la transacción
             const response = await tx.create(buyOrder, sessionId, amount, returnUrl);
 
-            // La respuesta de tx.create contendrá el token y la URL de redirección
             return {
                 token: response.token,
                 url: response.url
@@ -76,24 +94,20 @@ class ProductService {
     async confirmWebpayTransaction(token) {
         console.log(`Confirmando transacción Webpay con token: ${token}`);
         try {
-            // Crea una nueva instancia de transacción WebpayPlus con las opciones configuradas
             const tx = new WebpayPlus.Transaction(webpayOptions);
-            // Llama al método commit del SDK de Transbank para confirmar la transacción
-            const response = await tx.commit(token); // Usa commit para la confirmación
+            const response = await tx.commit(token);
 
-            // Parsea la respuesta de Webpay para determinar el estado
-            if (response.response_code === 0) { // Asumiendo que 0 significa éxito para WebpayPlus
+            if (response.response_code === 0) {
                 return {
                     status: 'CONFIRMED',
                     message: `Transacción ${token} confirmada exitosamente.`,
                     transactionDetails: {
                         amount: response.amount,
-                        cardType: response.card_detail ? response.card_detail.card_number : 'N/A', // Puede estar enmascarado
+                        cardType: response.card_detail ? response.card_detail.card_number : 'N/A',
                         accountingDate: response.accounting_date,
                         transactionDate: response.transaction_date,
                         responseCode: response.response_code,
                         vci: response.vci,
-                        // Añade más detalles según sea necesario de la respuesta de Webpay
                     }
                 };
             } else {
@@ -102,7 +116,6 @@ class ProductService {
                     message: `Transacción ${token} rechazada. Código de respuesta: ${response.response_code}`,
                     transactionDetails: {
                         responseCode: response.response_code,
-                        // Añade más detalles para el rechazo si están disponibles
                     }
                 };
             }
@@ -111,7 +124,6 @@ class ProductService {
             throw new Error('Error al conectar con Webpay para confirmar la transacción.');
         }
     }
-    // FIN DE MÉTODOS DE INTEGRACIÓN CON WEBPAY
 }
 
 module.exports = new ProductService();
